@@ -634,8 +634,116 @@ void main() {
 
 **บันทึกผลการทดลอง: บันทึกโค้ดคำสั่งที่ได้**
 ```dart
-// บันทึกโค้ดในส่วนนี้
+void main() {
+  List<Map<String, dynamic>> students = [
+    {"name": "สมชาย",  "gpa": 3.75, "year": 3, "faculty": "วิศวกรรม"},
+    {"name": "สมหญิง", "gpa": 2.50, "year": 1, "faculty": "วิทยาศาสตร์"},
+    {"name": "สมศักดิ์","gpa": 3.10, "year": 2, "faculty": "วิศวกรรม"},
+    {"name": "สมใจ",  "gpa": 1.80, "year": 4, "faculty": "บริหาร"},
+    {"name": "สมปอง", "gpa": 3.50, "year": 2, "faculty": "วิทยาศาสตร์"},
+    {"name": "สมศรี", "gpa": 2.90, "year": 3, "faculty": "บริหาร"},
+  ];
 
+  // === where() — กรองนักศึกษาที่ GPA >= 3.0 ===
+  print("=== นักศึกษาที่ GPA >= 3.0 ===");
+  var honorStudents = students
+      .where((s) => (s["gpa"] as double) >= 3.0)
+      .toList();
+  for (var s in honorStudents) {
+    print("  ${s["name"]}: ${s["gpa"]}");
+  }
+
+  // === map() — แปลงเป็น String รายงาน ===
+  print("\n=== รายงานนักศึกษา ===");
+  var report = students
+      .map((s) => "${s["name"]} (${s["faculty"]}) GPA: ${s["gpa"]}")
+      .toList();
+  report.forEach(print);
+
+  // === sort() + reduce() ===
+  print("\n=== วิเคราะห์คะแนน ===");
+  List<double> gpas = students.map((s) => s["gpa"] as double).toList();
+
+  double maxGpa = gpas.reduce((a, b) => a > b ? a : b);
+  double minGpa = gpas.reduce((a, b) => a < b ? a : b);
+  double avgGpa = gpas.reduce((a, b) => a + b) / gpas.length;
+
+  print("GPA สูงสุด: $maxGpa");
+  print("GPA ต่ำสุด: $minGpa");
+  print("GPA เฉลี่ย: ${avgGpa.toStringAsFixed(2)}");
+
+  // === any() และ every() ===
+  bool anyFailing = students.any((s) => (s["gpa"] as double) < 2.0);
+  bool allPassing = students.every((s) => (s["gpa"] as double) >= 2.0);
+  print("มีนักศึกษาที่ GPA < 2.0: $anyFailing");
+  print("ทุกคน GPA >= 2.0: $allPassing");
+
+  // === ทดลองเพิ่มเอง: กรองเฉพาะคณะวิศวกรรม ===
+  print("\n=== นักศึกษาคณะวิศวกรรม ===");
+  var engineeringStudents = students
+      .where((s) => s["faculty"] == "วิศวกรรม")
+      .toList();
+  for (var s in engineeringStudents) {
+    print("  ${s["name"]}: ${s["gpa"]}");
+  }
+
+  // ==========================================
+  // 🔥 บล็อกที่เพิ่มเข้ามาใหม่ตามโจทย์เพิ่มเติม 🔥
+  // ==========================================
+
+  // 1. ค้นหาชื่อนักศึกษาที่ GPA สูงสุดในคณะที่ระบุ
+  print("\n=== ค้นหานักศึกษาท็อปของคณะ ===");
+  String targetFaculty = "วิทยาศาสตร์";
+  String? topStudentName = findTopStudentByFaculty(students, targetFaculty);
+  print("นักศึกษาที่ GPA สูงสุดในคณะ[$targetFaculty] คือ: ${topStudentName ?? 'ไม่พบข้อมูล'}");
+
+  // 2. จัดกลุ่มนักศึกษาตามคณะ
+  print("\n=== จัดกลุ่มนักศึกษาตามคณะ ===");
+  Map<String, List<Map<String, dynamic>>> facultyGroup = groupByFaculty(students);
+  facultyGroup.forEach((faculty, list) {
+    print("คณะ: $faculty (${list.length} คน)");
+    for (var s in list) {
+      print("  - ${s["name"]} (GPA: ${s["gpa"]})");
+    }
+  });
+
+  // 3. ใช้ sort() เรียงลำดับจาก GPA สูงไปต่ำ แล้วพิมพ์ Top 3
+  print("\n=== นักศึกษาที่มี GPA สูงสุด 3 อันดับแรก ===");
+  // ใช้ cascade operator (..) เพื่อ sort ก่อนแล้วค่อยดึงมาทำ take
+  var topThreeStudents = (List<Map<String, dynamic>>.from(students)
+    ..sort((a, b) => (b["gpa"] as double).compareTo(a["gpa"] as double)))
+    .take(3);
+
+  int rank = 1;
+  for (var s in topThreeStudents) {
+    print("อันดับที่ $rank | ${s["name"]} (${s["faculty"]}) GPA: ${s["gpa"]}");
+    rank++;
+  }
+}
+
+// === ฟังก์ชันเพิ่มเติม (เขียนแยกไว้นอก main) ===
+
+// ฟังก์ชันหาชื่อคนที่ GPA สูงสุดตามคณะ
+String? findTopStudentByFaculty(List<Map<String, dynamic>> students, String faculty) {
+  var facultyStudents = students.where((s) => s["faculty"] == faculty);
+  if (facultyStudents.isEmpty) return null;
+  
+  var topStudent = facultyStudents.reduce((a, b) => (a["gpa"] as double) > (b["gpa"] as double) ? a : b);
+  return topStudent["name"] as String;
+}
+
+// ฟังก์ชันจัดกลุ่มนักศึกษา คืนค่าเป็น Map<String, List>
+Map<String, List<Map<String, dynamic>>> groupByFaculty(List<Map<String, dynamic>> students) {
+  Map<String, List<Map<String, dynamic>>> grouped = {};
+  for (var s in students) {
+    String faculty = s["faculty"] as String;
+    if (!grouped.containsKey(faculty)) {
+      grouped[faculty] = [];
+    }
+    grouped[faculty]!.add(s);
+  }
+  return grouped;
+}
 
 ```
 ---
